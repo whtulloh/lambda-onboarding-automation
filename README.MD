@@ -1,4 +1,6 @@
 # FLOW
+- Get real email in Graph
+- Get cutomize user properties from Sharepoint
 - Check if the user is exist in target system
 - Get all datasource in target system
 - Get datasource by employee

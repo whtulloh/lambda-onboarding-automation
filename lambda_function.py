@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from connector.sharePointConnector import SharePointConnector
 from connector.graphConnector import GraphConnector
-from connector.wfeConnector import WfeConnector
+from connector.workforceConnector import WorkforceConnector
 
 # COMMENTED: NOT USED IN LOCAL
 # ENV_CONSTANTS = environment_variables.get_environment_variables()
@@ -42,19 +42,19 @@ def lambda_handler(event):
         accUser = ""
         print_log("WARNING", "Can't found Email, even after doing manual")
     
-    # WFE Connection
-    wfeConn = WfeConnector()
-    wfeConn.set_wfe_scope(target_system)
-    wfeToken = wfeConn.set_token(wfeConn.get_token())
+    # Workforce Connection
+    woConn = WorkforceConnector()
+    woConn.set_scope(target_system)
+    woToken = woConn.set_token(woConn.get_token())
     
-    employee = isEmployeeExistInAPI(wfeConn, email)
-    allDatasourceFromAPI = wfeConn.get_data_sources()
+    employee = isEmployeeExistInAPI(woConn, email)
+    allDatasourceFromAPI = woConn.get_data_sources()
     
     if employee:
-        configDataSources(event, wfeConn, employee, accEmail, accUser, allDatasourceFromAPI)
-        updateDekstopMessagingUsername(event, wfeConn, employee)
-        assignUserToOrganization(wfeConn, employee, userRegion, email, accEmail)
-        updateUserExtension(wfeConn,accountNumber,employee, email)
+        configDataSources(event, woConn, employee, accEmail, accUser, allDatasourceFromAPI)
+        updateDekstopMessagingUsername(event, woConn, employee)
+        assignUserToOrganization(woConn, employee, userRegion, email, accEmail)
+        updateUserExtension(woConn,accountNumber,employee, email)
 
         # COMMENTED: NOT USED IN LOCAL
         # sendNotification(event)
@@ -72,9 +72,9 @@ def lambda_handler(event):
     
     
 # Check is Employee exist in API
-def isEmployeeExistInAPI(wfeConn, email):
-    wfeUsers = wfeConn.get_users()
-    isEmployeeFromAPI = [x for x in wfeUsers.get("data") if x.get("attributes").get("person").get("contact").get("email") == email]
+def isEmployeeExistInAPI(woConn, email):
+    workforceUsers = woConn.get_users()
+    isEmployeeFromAPI = [x for x in workforceUsers.get("data") if x.get("attributes").get("person").get("contact").get("email") == email]
     
     if isEmployeeFromAPI:
         employee = isEmployeeFromAPI.pop()
@@ -86,8 +86,8 @@ def isEmployeeExistInAPI(wfeConn, email):
  
         
 # Config Datasource for Employee
-def configDataSources(event, wfeConn, employee, accEmail, accUser, allDatasourceFromAPI):
-    sources = wfeConn.get_secret_data_source().split(',')
+def configDataSources(event, woConn, employee, accEmail, accUser, allDatasourceFromAPI):
+    sources = woConn.get_secret_data_source().split(',')
     
     datasources = []
     for src in sources:
@@ -100,48 +100,48 @@ def configDataSources(event, wfeConn, employee, accEmail, accUser, allDatasource
             print_log("ERROR", "Datasource "+source+" not found from API")
             
     # Check in API Get All Data Source from Employee (by Id)
-    sourceEmployeeFromAPI = wfeConn.get_data_source_by_employee_id(employee["id"])
+    sourceEmployeeFromAPI = woConn.get_data_source_by_employee_id(employee["id"])
     
     for datasource in datasources:
         # Find data source in sourceEmployeeFromAPI with contains datasource
         isSourceEmployeeAPI = [x for x in sourceEmployeeFromAPI["data"]["attributes"]["assets"] if str(x["dataSourceID"]) == datasource["source_id"]]
         if not isSourceEmployeeAPI:
             # set datasource login and create datasource
-            template = setDatasourceLoginTemplate(event, wfeConn, datasource["source_id"], datasource["source_name"], employee["id"], accEmail, accUser)
-            createDS = wfeConn.create_datasource(datasource["source_name"], employee["id"], event["email"], template)
+            template = setDatasourceLoginTemplate(event, woConn, datasource["source_id"], datasource["source_name"], employee["id"], accEmail, accUser)
+            createDS = woConn.create_datasource(datasource["source_name"], employee["id"], event["email"], template)
         else:
             print_log("INFO", "Datasource " +datasource["source_name"]+ " for employee " +event["email"]+ " is already Assigned")
  
     
 # set datasource login and create datasource
-def setDatasourceLoginTemplate(event, wfeConn, datasourceId, datasourceName, employeeId, accEmail, accUser):
+def setDatasourceLoginTemplate(event, woConn, datasourceId, datasourceName, employeeId, accEmail, accUser):
     if "DPA" == datasourceName[:3]: # Condition for only DPA Datasource
         if event["employee_id"] == accUser:
             datasourceLogin = event["employee_id"]+','+accEmail
-            template = wfeConn.open_template_two(datasourceId, datasourceName, employeeId, datasourceLogin)
+            template = woConn.open_template_two(datasourceId, datasourceName, employeeId, datasourceLogin)
         else:
             datasourceLogin = event["employee_id"]+','+accEmail+','+accUser
-            template = wfeConn.open_template_three(datasourceId, datasourceName, employeeId, datasourceLogin)
+            template = woConn.open_template_three(datasourceId, datasourceName, employeeId, datasourceLogin)
     elif "TextRecording_854192" == datasourceName: # Condition for only TextRecording_854192 Datasource
         datasourceLogin = event["email"] 
-        template = wfeConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
+        template = woConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
     elif "Text" == datasourceName[:4]: # Condition for only Text Datasource except TextRecording_854192
-        manualSamaccount = wfeConn.manual_sam_account(event["email"])
+        manualSamaccount = woConn.manual_sam_account(event["email"])
         datasourceLogin = event["email"]+','+manualSamaccount
-        template = wfeConn.open_template_two(datasourceId, datasourceName, employeeId, datasourceLogin)
+        template = woConn.open_template_two(datasourceId, datasourceName, employeeId, datasourceLogin)
     elif "AVD Desktops" == datasourceName: # Condition for only AVD Desktops Datasource
-        datasourceLogin = wfeConn.manual_avd_account(event["email"])
-        template = wfeConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
+        datasourceLogin = woConn.manual_avd_account(event["email"])
+        template = woConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
 
     else: # Condition default
         datasourceLogin = event["username"] 
-        template = wfeConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
+        template = woConn.open_template(datasourceId, datasourceName, employeeId, datasourceLogin)
 
     return template
 
 
 # Update Dekstop Messaging Username
-def updateDekstopMessagingUsername(event, wfeConn, employee):
+def updateDekstopMessagingUsername(event, woConn, employee):
     employeeID = employee["id"]
     email = employee["attributes"]["person"]["contact"]["email"]
     firstName = employee["attributes"]["person"]["firstName"]
@@ -154,8 +154,8 @@ def updateDekstopMessagingUsername(event, wfeConn, employee):
             desktopMessagingUsername = employee["attributes"]["person"]["contact"]["desktopMessagingUsername"]
             if not desktopMessagingUsername:
                 # set template and send update
-                template = wfeConn.open_template_user_dmu(employeeID, email, firstName, lastName, organizationId)
-                updateDmu = wfeConn.update_desktop_messaging_username(email, employeeID, template)
+                template = woConn.open_template_user_dmu(employeeID, email, firstName, lastName, organizationId)
+                updateDmu = woConn.update_desktop_messaging_username(email, employeeID, template)
             else:
                 print_log("INFO", "Desktop Messaging Username is already Assigned")
         else:
@@ -175,7 +175,7 @@ def getOrganizationIdByRegion(organizations, userRegion, email):
         
 
 # Assign Employee to Organization using Organization ID and Employee ID
-def assignUserToOrganization(wfeConn, employee, usrRegion, email, accEmail):
+def assignUserToOrganization(woConn, employee, usrRegion, email, accEmail):
     # Change Region AMER for corp only
     emailsplit = email.split("@")
     
@@ -184,34 +184,34 @@ def assignUserToOrganization(wfeConn, employee, usrRegion, email, accEmail):
             usrRegion = usrRegion + " Eastern"
             
         organizationName = "Enterprise Users - " + usrRegion
-        organizations = wfeConn.get_all_organization()
+        organizations = woConn.get_all_organization()
         organizationId = getOrganizationIdByRegion(organizations, usrRegion, email)
-        organizationTemplate = wfeConn.open_template_employee_organization(employee["id"], organizationName)
-        assignEmployee = wfeConn.assign_employee_to_organization(organizationId, organizationName, email, organizationTemplate)
+        organizationTemplate = woConn.open_template_employee_organization(employee["id"], organizationName)
+        assignEmployee = woConn.assign_employee_to_organization(organizationId, organizationName, email, organizationTemplate)
     else:
         print_log("INFO", email + " is not in email.corp or maybe email was Portal_Services, organization not changed")
     
     
-def updateUserExtension(wfeConn, extension, employee, email):
+def updateUserExtension(woConn, extension, employee, email):
     firstName = employee["attributes"]["person"]["firstName"]
     lastName = employee["attributes"]["person"]["lastName"]
     employeeId = employee["id"]
     
     emailsplit = email.split("@")
     if emailsplit[1].lower() == "email.corp":
-        extensions= wfeConn.get_secret_extension().split(',') # convert datasource name for extension to array, if the extension number for datasources on here is same, then no need to refactor
+        extensions= woConn.get_secret_extension().split(',') # convert datasource name for extension to array, if the extension number for datasources on here is same, then no need to refactor
         for src in extensions:
             dsName = src.strip()
-            dsId= wfeConn.get_datasource_by_name(dsName)
-            template = wfeConn.open_template_extension(dsId, dsName, employeeId, extension)
-            checkExt = wfeConn.check_extension(dsId,extension, email)
+            dsId= woConn.get_datasource_by_name(dsName)
+            template = woConn.open_template_extension(dsId, dsName, employeeId, extension)
+            checkExt = woConn.check_extension(dsId,extension, email)
             
             if checkExt == "Not Allowed":
                 print_log("ERROR","Set extension for "+email+ " Not Allowed")
             elif checkExt == "CREATE":
-                wfeConn.assign_extension(dsId, template, email)
+                woConn.assign_extension(dsId, template, email)
             elif checkExt == "UPDATE":
-                wfeConn.update_extension(dsId, template, email)
+                woConn.update_extension(dsId, template, email)
             else:
                 print_log("ERROR","Unable to set extension for "+email)
     else:
@@ -223,8 +223,8 @@ def updateUserExtension(wfeConn, extension, employee, email):
 # def sendNotification(event):
 #     payload = {'employee_id':event['employee_id'],'target_system':event['target_system']}
 #     payload = json.dumps(payload)
-#     print_log("INFO", "Payload for wfe-scopeupdate-ssm "+ payload)
-#     response = lambda_service.invoke_lambda_function(REGION,"wfe-scopeupdate-ssm",payload,in_invocation_type="RequestResponse")
+#     print_log("INFO", "Payload for scopeupdate-ssm "+ payload)
+#     response = lambda_service.invoke_lambda_function(REGION,"scopeupdate-ssm",payload,in_invocation_type="RequestResponse")
 #     result = response.decode('UTF-8')
 #     print_log("INFO", "Response lambda_service.invoke_lambda_function : " + result)
 
