@@ -1,0 +1,9 @@
+{
+    "data": [
+        {
+            "id": "EMPLOYEE_ID",
+            "type": "employee",
+            "attributes": {}
+        }
+    ]
+}

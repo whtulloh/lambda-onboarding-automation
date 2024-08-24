@@ -1,0 +1,14 @@
+{
+    "extensionValue": "EXTENSION",
+    "recordingMode": 1,
+    "resourceGroups": [
+        {
+            "id": 751,
+            "name": "CUCM IPEP MG",
+            "resourceGroupTypeId": -501003
+        }
+    ],
+    "employee": {
+        "id": "EMPLOYEEID"
+    }
+}

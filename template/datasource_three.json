@@ -1,0 +1,23 @@
+{
+    "data": [{
+        "attributes": {
+            "assets": [
+                {
+                    "dataSourceID": "DATASOURCE_ID",
+                    "employeeID": "DATASOURCE_EMPLOYEEID",
+                    "loginName": "DATASOURCE_LOGINNAME_0"
+                },
+                {
+                    "dataSourceID": "DATASOURCE_ID",
+                    "employeeID": "DATASOURCE_EMPLOYEEID",
+                    "loginName": "DATASOURCE_LOGINNAME_1"
+                },
+                {
+                    "dataSourceID": "DATASOURCE_ID",
+                    "employeeID": "DATASOURCE_EMPLOYEEID",
+                    "loginName": "DATASOURCE_LOGINNAME_2"
+                }
+            ]
+        }
+    }]
+}

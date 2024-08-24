@@ -1,0 +1,15 @@
+{
+    "data": {
+      "id": "EMPLOYEE_ID",
+      "attributes": {
+        "person": {
+          "contact" : {
+            "desktopMessagingUsername" : "EMPLOYEE_DMU"
+          },
+          "firstName" : "EMPLOYEE_FIRSTNAME",
+          "lastName" : "EMPLOYEE_LASTNAME"
+        },
+        "organizationId":"ORG_ID"
+      }
+    }
+  }
